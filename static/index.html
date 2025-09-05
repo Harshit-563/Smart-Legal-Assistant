@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Contract Risk Analyzer</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; }
+    .summary { padding: 10px; background: #f0f0f0; border-radius: 6px; margin-bottom: 20px; }
+    .clause { padding: 10px; margin: 10px 0; border-left: 4px solid #888; background: #fafafa; }
+    .risky { border-left-color: red; background: #ffe6e6; }
+  </style>
+</head>
+<body>
+  <h1>📄 Contract Risk Analyzer</h1>
+  
+  <form id="uploadForm">
+    <input type="file" id="pdfFile" accept="application/pdf" required />
+    <button type="submit">Analyze</button>
+  </form>
+
+  <h2>Summary</h2>
+  <div id="summary" class="summary"></div>
+
+  <h2>Clauses</h2>
+  <div id="clauses"></div>
+
+  <h2>Risky Clauses 🚨</h2>
+  <div id="risky"></div>
+
+  <script>
+    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById("pdfFile");
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      let response = await fetch("http://localhost:8000/analyze-pdf", {
+        method: "POST",
+        body: formData
+      });
+
+      let data = await response.json();
+
+      // Show summary
+      document.getElementById("summary").innerText = data.summary || "No summary found.";
+
+      // Show all clauses
+      const clausesDiv = document.getElementById("clauses");
+      clausesDiv.innerHTML = "";
+      data.clauses.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "clause";
+        div.innerText = c;
+        clausesDiv.appendChild(div);
+      });
+
+      // Show risky clauses
+      const riskyDiv = document.getElementById("risky");
+      riskyDiv.innerHTML = "";
+      data.risky_clauses.forEach(r => {
+        const div = document.createElement("div");
+        div.className = "clause risky";
+        div.innerText = r;
+        riskyDiv.appendChild(div);
+      });
+    });
+  </script>
+</body>
+</html>

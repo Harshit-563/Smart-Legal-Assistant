@@ -1,0 +1,28 @@
+# Smart Legal Assistant
+
+## Overview
+Smart Legal Assistant is an NLP-based project that analyzes legal contracts, extracts key clauses, generates summaries, and flags risky terms.
+
+## Setup
+1. Create a virtual environment
+```
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
+```
+2. Install dependencies
+```
+pip install -r docs/requirements.txt
+```
+
+## Run the App (development)
+```
+uvicorn src.smart_legal_assistant:app --reload --port 8000
+```
+
+## Quick test (script)
+```
+python app.py
+```

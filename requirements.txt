@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+pdfminer.six
+transformers
+python-multipart
+torch==2.2.2
+sentencepiece
+numpy==1.26.4

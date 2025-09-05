@@ -1,0 +1,15 @@
+services:
+  python-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: python-app
+    restart: unless-stopped
+    init: true
+    ports:
+      - "8000:8000"  # FastAPI app exposed on port 8000
+    # env_file: ./.env  # Uncomment if .env file exists
+    # No external dependencies detected in README or source files
+    # No volumes needed as no database or persistent storage is used
+    # No additional networks required for a single service
+    # If you add a database or other service, add depends_on and networks accordingly
