@@ -6,7 +6,9 @@ from src.smart_legal_assistant import (
     extract_text_from_pdf
 )
 
-app = FastAPI(title="Smart Legal Assistant")
+# app.py (replace contents with this)
+from src.smart_legal_assistant import app  # use the app already defined there
+
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)

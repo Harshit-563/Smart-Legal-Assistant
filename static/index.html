@@ -2,67 +2,184 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Contract Risk Analyzer</title>
+  <title>Smart Legal Assistance</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 30px; }
-    .summary { padding: 10px; background: #f0f0f0; border-radius: 6px; margin-bottom: 20px; }
-    .clause { padding: 10px; margin: 10px 0; border-left: 4px solid #888; background: #fafafa; }
+    .summary { padding: 10px; background: #f0f0f0; border-radius: 6px; margin-bottom: 20px; min-height:48px; }
+    .clause { padding: 10px; margin: 10px 0; border-left: 4px solid #888; background: #fafafa; white-space: pre-wrap; }
     .risky { border-left-color: red; background: #ffe6e6; }
+    .meta { margin-bottom: 12px; color: #555; }
+    .progress-wrap { margin-top: 12px; width: 100%; max-width: 600px; }
+    .progress { width: 100%; height: 12px; background: #eee; border-radius: 8px; overflow: hidden; }
+    .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg,#4caf50,#8bc34a); transition: width 150ms linear; }
+    .progress-text { margin-top: 6px; font-size: 0.9rem; color: #333; }
+    .hidden { display: none; }
+    #error { color: #b00020; margin-top: 10px; }
+    button[disabled] { opacity: 0.6; cursor: not-allowed; }
   </style>
 </head>
 <body>
-  <h1>📄 Contract Risk Analyzer</h1>
-  
+  <h1>📄 Smart Legal Assistance</h1>
+
+  <div class="meta">Select a PDF and click <strong>Analyze</strong>. Progress will show while the file uploads.</div>
+
   <form id="uploadForm">
     <input type="file" id="pdfFile" accept="application/pdf" required />
-    <button type="submit">Analyze</button>
+    <button type="submit" id="analyzeBtn">Analyze</button>
+
+    <div class="progress-wrap hidden" id="progressWrap">
+      <div class="progress" aria-hidden="true">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-text" id="progressText">Uploading: 0%</div>
+    </div>
+
+    <div id="error" class="hidden"></div>
   </form>
 
   <h2>Summary</h2>
-  <div id="summary" class="summary"></div>
+  <div id="summary" class="summary">No document analyzed yet.</div>
 
   <h2>Clauses</h2>
-  <div id="clauses"></div>
+  <div id="clauses">—</div>
 
   <h2>Risky Clauses 🚨</h2>
-  <div id="risky"></div>
+  <div id="risky">—</div>
 
   <script>
-    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+    const uploadForm = document.getElementById("uploadForm");
+    const fileInput = document.getElementById("pdfFile");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+    const progressWrap = document.getElementById("progressWrap");
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+    const errorDiv = document.getElementById("error");
+    const summaryDiv = document.getElementById("summary");
+    const clausesDiv = document.getElementById("clauses");
+    const riskyDiv = document.getElementById("risky");
+
+    function setError(msg) {
+      errorDiv.classList.remove("hidden");
+      errorDiv.innerText = msg;
+    }
+    function clearError() {
+      errorDiv.classList.add("hidden");
+      errorDiv.innerText = "";
+    }
+
+    uploadForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      const fileInput = document.getElementById("pdfFile");
+      clearError();
+
+      if (!fileInput.files || !fileInput.files[0]) {
+        setError("Please choose a PDF file first.");
+        return;
+      }
+
+      // Use XMLHttpRequest to get upload progress events
+      const xhr = new XMLHttpRequest();
+      const url = "http://localhost:8000/analyze-pdf"; // change if needed
+
       const formData = new FormData();
       formData.append("file", fileInput.files[0]);
 
-      let response = await fetch("http://localhost:8000/analyze-pdf", {
-        method: "POST",
-        body: formData
+      xhr.open("POST", url, true);
+
+      // Update UI
+      analyzeBtn.disabled = true;
+      progressWrap.classList.remove("hidden");
+      progressBar.style.width = "0%";
+      progressText.textContent = "Uploading: 0%";
+
+      xhr.upload.addEventListener("progress", (evt) => {
+        if (evt.lengthComputable) {
+          const percent = Math.round((evt.loaded / evt.total) * 100);
+          progressBar.style.width = percent + "%";
+          progressText.textContent = "Uploading: " + percent + "%";
+        } else {
+          // unknown total size
+          progressText.textContent = "Uploading…";
+        }
       });
 
-      let data = await response.json();
+      xhr.onreadystatechange = function () {
+        // finished
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          analyzeBtn.disabled = false;
+          progressWrap.classList.add("hidden");
+          progressBar.style.width = "0%";
 
-      // Show summary
-      document.getElementById("summary").innerText = data.summary || "No summary found.";
+          // Try to parse response
+          if (xhr.status >= 200 && xhr.status < 300) {
+            let data;
+            try {
+              data = JSON.parse(xhr.responseText);
+            } catch (err) {
+              setError("Server returned an invalid response. See console for details.");
+              console.error("Invalid JSON from server:", xhr.responseText);
+              return;
+            }
+            displayResult(data);
+          } else {
+            // Non-2xx from server. Show server body if available.
+            let body = xhr.responseText || "(no response body)";
+            setError("Upload failed — server returned status " + xhr.status + ". " + body);
+            console.error("Server error:", xhr.status, xhr.responseText);
+          }
+        }
+      };
 
-      // Show all clauses
-      const clausesDiv = document.getElementById("clauses");
+      xhr.onerror = function () {
+        analyzeBtn.disabled = false;
+        progressWrap.classList.add("hidden");
+        setError("Network error or CORS blocked the request. If you're seeing a CORS error in the console, make sure your backend allows the origin http://127.0.0.1:5500");
+      };
+
+      xhr.send(formData);
+    });
+
+    function displayResult(data) {
+      // Summary
+      if (data.summary && data.summary.trim()) {
+        summaryDiv.innerText = data.summary;
+      } else {
+        summaryDiv.innerText = "No summary found.";
+      }
+
+      // Clauses
       clausesDiv.innerHTML = "";
-      data.clauses.forEach(c => {
-        const div = document.createElement("div");
-        div.className = "clause";
-        div.innerText = c;
-        clausesDiv.appendChild(div);
-      });
+      if (Array.isArray(data.clauses) && data.clauses.length > 0) {
+        data.clauses.forEach(c => {
+          const div = document.createElement("div");
+          div.className = "clause";
+          div.innerText = c;
+          clausesDiv.appendChild(div);
+        });
+      } else {
+        clausesDiv.innerText = "None";
+      }
 
-      // Show risky clauses
-      const riskyDiv = document.getElementById("risky");
+      // Risky clauses: server may return either `risky_clauses` or `flagged_risks` depending on backend
+      const riskyList = data.risky_clauses || data.flagged_risks || data.risky || [];
       riskyDiv.innerHTML = "";
-      data.risky_clauses.forEach(r => {
-        const div = document.createElement("div");
-        div.className = "clause risky";
-        div.innerText = r;
-        riskyDiv.appendChild(div);
-      });
+      if (Array.isArray(riskyList) && riskyList.length > 0) {
+        riskyList.forEach(r => {
+          const div = document.createElement("div");
+          div.className = "clause risky";
+          div.innerText = r;
+          riskyDiv.appendChild(div);
+        });
+      } else {
+        riskyDiv.innerText = "None";
+      }
+    }
+
+    // Nice small UX: allow Enter to submit when file input has focus
+    fileInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        uploadForm.requestSubmit();
+      }
     });
   </script>
 </body>

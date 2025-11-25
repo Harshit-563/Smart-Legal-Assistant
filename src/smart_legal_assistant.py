@@ -31,6 +31,24 @@ from transformers.pipelines import pipeline
 
 # Initialize app
 app = FastAPI(title="Smart Legal Assistant - Prototype")
+from fastapi.middleware.cors import CORSMiddleware
+
+# CORS configuration — adjust origins for your dev host(s)
+origins = [
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,       # or ["*"] for quick local dev (not for production)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Configurable model names (change via ENV)
 SUMMARIZATION_MODEL = os.getenv("SUMMARIZATION_MODEL", "facebook/bart-large-cnn")
