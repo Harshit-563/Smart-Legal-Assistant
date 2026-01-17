@@ -4,6 +4,7 @@ pydantic
 pdfminer.six
 transformers
 python-multipart
-torch==2.2.2
+torch --index-url https://download.pytorch.org/whl/cpu
+
 sentencepiece
 numpy==1.26.4
