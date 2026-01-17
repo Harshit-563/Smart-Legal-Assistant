@@ -1,0 +1,20 @@
+# virtual environments
+venv/
+.venv/
+
+# python
+__pycache__/
+*.pyc
+
+# uploads & outputs
+uploads/
+samples/
+*.pdf
+
+# caches
+.cache/
+.huggingface/
+
+# editor & env
+.vscode/
+.env
