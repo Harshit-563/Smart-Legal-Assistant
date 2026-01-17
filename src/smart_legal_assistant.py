@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from pdfminer.high_level import extract_text as pdf_extract_text
-from transformers.pipelines import pipeline
+from transformers import pipeline, AutoTokenizer
 
 
 # -------------------- FASTAPI APP --------------------
@@ -27,6 +27,7 @@ app = FastAPI(title="Smart Legal Assistant - Prototype")
 
 origins = [
     "https://smart-legal-assistant-bice.vercel.app/",
+    "http://127.0.0.1:5500",
 ]
 
 app.add_middleware(
@@ -40,8 +41,15 @@ app.add_middleware(
 
 # -------------------- MODELS --------------------
 
-SUMMARIZATION_MODEL = os.getenv("SUMMARIZATION_MODEL", "facebook/bart-large-cnn")
-NLI_MODEL = os.getenv("NLI_MODEL", "roberta-large-mnli")
+SUMMARIZATION_MODEL = os.getenv(
+    "SUMMARIZATION_MODEL",
+    "facebook/bart-large-cnn"
+)
+
+NLI_MODEL = os.getenv(
+    "NLI_MODEL",
+    "roberta-large-mnli"
+)
 
 _summarizer = None
 _nli_classifier = None
@@ -50,19 +58,28 @@ _nli_classifier = None
 def get_summarizer():
     global _summarizer
     if _summarizer is None:
-        _summarizer = pipeline("summarization", model=SUMMARIZATION_MODEL)
+        tokenizer = AutoTokenizer.from_pretrained(SUMMARIZATION_MODEL)
+        _summarizer = pipeline(
+            "summarization",
+            model=SUMMARIZATION_MODEL,
+            tokenizer=tokenizer,
+            device=-1
+        )
     return _summarizer
 
 
 def get_nli():
     global _nli_classifier
     if _nli_classifier is None:
+        tokenizer = AutoTokenizer.from_pretrained(NLI_MODEL)
         _nli_classifier = pipeline(
             "text-classification",
             model=NLI_MODEL,
-            tokenizer=NLI_MODEL,
+            tokenizer=tokenizer,
+            device=-1
         )
     return _nli_classifier
+
 
 
 # -------------------- FILE HANDLING (FIXED) --------------------
