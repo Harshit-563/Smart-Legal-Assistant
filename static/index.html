@@ -239,7 +239,9 @@
 
       // Use XMLHttpRequest to get upload progress events
       const xhr = new XMLHttpRequest();
-      const url = "http://localhost:8000/analyze"; // change if needed
+      const API_BASE = "https://smart-legal-assistant-8tk6.onrender.com";
+      const url = `${API_BASE}/analyze`;
+ // change if needed
 
       const formData = new FormData();
       formData.append("file", fileInput.files[0]);
