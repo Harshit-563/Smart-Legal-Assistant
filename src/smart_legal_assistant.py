@@ -21,22 +21,17 @@ from transformers.pipelines import pipeline
 
 # -------------------- FASTAPI APP --------------------
 
-app = FastAPI(title="Smart Legal Assistant - Prototype")
-
-origins = [
-    "http://127.0.0.1:5500",
-    "http://localhost:5500",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-]
+from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=[
+        "https://smart-legal-assistant-bice.vercel.app"
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # -------------------- MODELS --------------------
 
